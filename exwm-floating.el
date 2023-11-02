@@ -227,7 +227,9 @@ context of the corresponding buffer."
       (let ((x** (plist-get exwm--configurations 'x))
             (y** (plist-get exwm--configurations 'y))
             (width** (plist-get exwm--configurations 'width))
-            (height** (plist-get exwm--configurations 'height)))
+            (height** (plist-get exwm--configurations 'height))
+            (max-width** (plist-get exwm--configurations 'max-width))
+            (max-height** (plist-get exwm--configurations 'max-height)))
         (if (integerp x**)
             (setq x (+ x* x**))
           (when (and (floatp x**)
@@ -238,6 +240,36 @@ context of the corresponding buffer."
           (when (and (floatp y**)
                      (>= 1 y** 0))
             (setq y (+ y* (round (* y** height*))))))
+        (when (and (integerp max-width**) (integerp max-height**)
+                   (or (> width max-width**) (> height max-height**)))
+          (setq x (+ x* (round (- (* 0.5 width*) (* 0.5 max-width**)
+                                  (cl-reduce
+                                   '+ (cl-map
+                                       'list
+                                       (lambda (strut)
+                                         (cond ((eq (aref strut 0) 'left)
+                                                (* 0.5 (aref strut 1)))
+                                               ((eq (aref strut 0) 'right)
+                                                (- (* 0.5 (aref strut 1))))))
+                                       (cl-remove-if-not
+                                        (lambda (strut)
+                                          (cl-member (aref strut 0) '(left right)))
+                                        exwm-workspace--struts))))))
+                y (+ y* (round (- (* 0.5 height*) (* 0.5 max-height**)
+                                  (cl-reduce
+                                   '+ (cl-map
+                                       'list
+                                       (lambda (strut)
+                                         (cond ((eq (aref strut 0) 'top)
+                                                (* 0.5 (aref strut 1)))
+                                               ((eq (aref strut 0) 'bottom)
+                                                (- (* 0.5 (aref strut 1))))))
+                                       (cl-remove-if-not
+                                        (lambda (strut)
+                                          (cl-member (aref strut 0) '(top bottom)))
+                                        exwm-workspace--struts))))))
+                width max-width**
+                height max-height**))
         (if (integerp width**)
             (setq width width**)
           (when (and (floatp width**)
